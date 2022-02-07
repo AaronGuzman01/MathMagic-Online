@@ -2,6 +2,7 @@
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -19,6 +20,8 @@ public class MathMagicServer {
 
     private static final int SERVER_PORT = 9862;
 
+    private static final String FILES_PATH = "Solution Files/";
+
     private static boolean rootLogin = false;
 
     private static boolean loggedIn = false;
@@ -27,7 +30,7 @@ public class MathMagicServer {
 
     private static String userLogged;
 
-    private static File solFile;
+    private static File solutionFile;
 
     public static void main(String[] args) {
         try {
@@ -59,11 +62,15 @@ public class MathMagicServer {
                             boolean found = false;
                             for (String user : userList) {
                                 if (user.equals(loginInfo)) {
-                                    userLogged = user.substring(0, message.indexOf(" ") - 1);
+                                    userLogged = user.substring(0, message.indexOf(" "));
+
+                                    userLogged = userLogged.trim();
 
                                     loggedIn = true;
 
                                     found = true;
+
+                                    handleUserFile();
 
                                     outputToClient.writeUTF("SUCCESS");
 
@@ -84,7 +91,7 @@ public class MathMagicServer {
                             if (problem.matches("^-c.*")) {
                                 problem = problem.substring(problem.indexOf("c") + 1, problem.length());
 
-                                if (problem.matches(" \\d*\\s*")) {
+                                if (problem.matches(" \\d+\\s*")) {
                                     double val = Double.parseDouble(problem);
                                     double circumference = 2.0 * Math.PI * val;
                                     double area = Math.PI * (val * val);
@@ -94,15 +101,19 @@ public class MathMagicServer {
 
                                     outputToClient.writeUTF(results);
 
-                                } else if (problem.isEmpty() || problem.matches("\\s*")) {
+                                    writeToFile(results);
+
+                                } else if (problem.isEmpty() || problem.isBlank()) {
                                     outputToClient.writeUTF("Error: No radius found");
+
+                                    writeToFile("Error: No radius found");
                                 } else {
                                     outputToClient.writeUTF("301 message format error");
                                 }
                             } else if (problem.matches("^-r.*")) {
                                 problem = problem.substring(problem.indexOf("r") + 1, problem.length());
 
-                                if (Pattern.matches(" \\d* \\d*\\s*", problem)) {
+                                if (Pattern.matches(" \\d+ \\d+\\s*", problem)) {
                                     problem = problem.substring(1, problem.length());
 
                                     double val1 = Double.parseDouble(problem.substring(0, problem.indexOf(" ")));
@@ -115,7 +126,9 @@ public class MathMagicServer {
 
                                     outputToClient.writeUTF(results);
 
-                                } else if (Pattern.matches(" \\d*\\s*", problem)) {
+                                    writeToFile(results);
+
+                                } else if (Pattern.matches(" \\d+\\s*", problem)) {
                                     double val = Double.parseDouble(problem);
                                     double perimeter = 4.0 * val;
                                     double area = val * val;
@@ -125,19 +138,18 @@ public class MathMagicServer {
 
                                     outputToClient.writeUTF(results);
 
-                                } else if (problem.isEmpty() || problem.matches("\\s*")) {
+                                    writeToFile(results);
+
+                                } else if (problem.isEmpty() || problem.isBlank()) {
                                     outputToClient.writeUTF("Error: No radius found");
+
+                                    writeToFile("Error: No radius found");
                                 } else {
                                     outputToClient.writeUTF("301 message format error");
                                 }
                             } else {
                                 outputToClient.writeUTF("301 message format error");
                             }
-
-                            solFile = new File(userLogged + "_solutions.txt");
-
-                            solFile.createNewFile();
-
                         } else {
                             outputToClient.writeUTF("Error: You must login to use this command");
                         }
@@ -148,11 +160,20 @@ public class MathMagicServer {
                     }
                 } else {
                     if (message.equalsIgnoreCase("LIST")) {
-                        outputToClient.writeUTF("LIST COMMAND");
+
+                        List<String> interactions;
+                        String list;
+
+                        interactions = GetFileLines();
+
+                        list = listToString(interactions);
+
+                        outputToClient.writeUTF(list);
                     } else if (message.equalsIgnoreCase("SHUTDOWN")) {
                         outputToClient.writeUTF("SHUTDOWN COMMAND");
                     } else if (message.equalsIgnoreCase("LOGOUT")) {
                         outputToClient.writeUTF("LOGOUT COMMAND");
+                        loggedIn = false;
                     } else {
                         outputToClient.writeUTF("300 invalid command");
                     }
@@ -162,5 +183,48 @@ public class MathMagicServer {
         } catch (IOException ex) {
             ex.printStackTrace();
         }
+    }
+
+    private static void handleUserFile() throws IOException {
+        solutionFile = new File(FILES_PATH + userLogged + "_solutions.txt");
+
+        if (!Files.exists(Path.of(FILES_PATH))) {
+            Files.createDirectory(Path.of(FILES_PATH));
+        }
+        solutionFile.createNewFile();
+    }
+
+    private static List<String> GetFileLines() throws IOException {
+        List<String> lines = Files.readAllLines(Path.of(FILES_PATH + userLogged + "_solutions.txt"));
+
+        lines.remove("");
+
+        return lines;
+    }
+
+    private static String listToString(List<String> interactions) {
+        String temp;
+
+        temp = userLogged + ":\n";
+
+        if (interactions.isEmpty()) {
+            temp += "\t" + "No interactions yet";
+        } 
+        else {
+            for (String interaction : interactions) {
+                temp += "\t" + interaction + "\n";
+            }
+            
+            temp = temp.substring(0, temp.length() - 2);
+        }
+
+        return temp;
+    }
+
+    private static void writeToFile(String str) throws IOException {
+        FileWriter fileWriter = new FileWriter(FILES_PATH + userLogged + "_solutions.txt", true);
+
+        fileWriter.write(str + "\n");
+        fileWriter.close();
     }
 }

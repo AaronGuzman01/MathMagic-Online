@@ -1,0 +1,7 @@
+Circle’s circumference is 25.13 and area is 50.27
+Error: No radius found
+Error: No radius found
+Error: No radius found
+Circle’s circumference is 25.13 and area is 50.27
+Circle’s circumference is 34903.09 and area is 96943344.64
+Circle’s circumference is 34903.09 and area is 96943344.64
