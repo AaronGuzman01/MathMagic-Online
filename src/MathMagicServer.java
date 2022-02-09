@@ -70,7 +70,11 @@ public class MathMagicServer {
 
                                     found = true;
 
-                                    handleUserFile();
+                                    if (userLogged.equals("root")) {
+                                        rootLogin = true;
+                                    }
+
+                                    handleUserFile(userLogged);
 
                                     outputToClient.writeUTF("SUCCESS");
 
@@ -154,20 +158,49 @@ public class MathMagicServer {
                             outputToClient.writeUTF("Error: You must login to use this command");
                         }
                     } else if (command.equalsIgnoreCase("LIST")) {
-                        outputToClient.writeUTF("LIST COMMAND");
+                        if (rootLogin) {
+                            String flag = message.substring(message.indexOf(" "), message.length());
+
+                            if (flag.matches("^ -all\\s*")) {
+                                List<String> interactions;
+                                String userName, list = "";
+                                
+                                for (String user: userList) {
+                                    userName = user.substring(0, message.indexOf(" ") + 1);
+                                    
+                                    userName = userName.trim();
+                                    
+                                    handleUserFile(userName);
+                                    
+                                    interactions = GetFileLines(userName);
+                                    
+                                    list += listToString(interactions, userName);
+                                    
+                                    list += "\n";
+                                }
+                                
+                                outputToClient.writeUTF(list);
+
+                            } else {
+                                outputToClient.writeUTF("301 message format error");
+                            }
+                        } else {
+                            outputToClient.writeUTF("Error: You must be the root user to use this command");
+                        }
                     } else {
                         outputToClient.writeUTF("300 invalid command");
                     }
                 } else {
                     if (message.equalsIgnoreCase("LIST")) {
-
                         List<String> interactions;
                         String list;
 
-                        interactions = GetFileLines();
+                        interactions = GetFileLines(userLogged);
 
-                        list = listToString(interactions);
+                        list = listToString(interactions, userLogged);
 
+                        list += "\n";
+                        
                         outputToClient.writeUTF(list);
                     } else if (message.equalsIgnoreCase("SHUTDOWN")) {
                         outputToClient.writeUTF("SHUTDOWN COMMAND");
@@ -185,8 +218,8 @@ public class MathMagicServer {
         }
     }
 
-    private static void handleUserFile() throws IOException {
-        solutionFile = new File(FILES_PATH + userLogged + "_solutions.txt");
+    private static void handleUserFile(String user) throws IOException {
+        solutionFile = new File(FILES_PATH + user + "_solutions.txt");
 
         if (!Files.exists(Path.of(FILES_PATH))) {
             Files.createDirectory(Path.of(FILES_PATH));
@@ -194,27 +227,24 @@ public class MathMagicServer {
         solutionFile.createNewFile();
     }
 
-    private static List<String> GetFileLines() throws IOException {
-        List<String> lines = Files.readAllLines(Path.of(FILES_PATH + userLogged + "_solutions.txt"));
-
-        lines.remove("");
-
+    private static List<String> GetFileLines(String user) throws IOException {
+        List<String> lines = Files.readAllLines(Path.of(FILES_PATH + user + "_solutions.txt"));
+        
         return lines;
     }
 
-    private static String listToString(List<String> interactions) {
+    private static String listToString(List<String> interactions, String user) {
         String temp;
 
-        temp = userLogged + ":\n";
+        temp = user + ":\n";
 
         if (interactions.isEmpty()) {
             temp += "\t" + "No interactions yet";
-        } 
-        else {
+        } else {
             for (String interaction : interactions) {
                 temp += "\t" + interaction + "\n";
             }
-            
+
             temp = temp.substring(0, temp.length() - 2);
         }
 
@@ -222,9 +252,8 @@ public class MathMagicServer {
     }
 
     private static void writeToFile(String str) throws IOException {
-        FileWriter fileWriter = new FileWriter(FILES_PATH + userLogged + "_solutions.txt", true);
-
-        fileWriter.write(str + "\n");
-        fileWriter.close();
+        try (FileWriter fileWriter = new FileWriter(FILES_PATH + userLogged + "_solutions.txt", true)) {
+            fileWriter.write(str + "\n");
+        }
     }
 }
