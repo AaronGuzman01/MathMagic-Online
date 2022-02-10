@@ -163,7 +163,7 @@ public class MatheMagicServer {
                                     outputToClient.writeUTF(solution + "\n");
 
                                     //writes solution to client file
-                                    writeToFile(solution);
+                                    writeToFile("radius " + (int)val + ": " + solution);
 
                                 } else if (problem.isEmpty() || problem.isBlank()) { //checks if problem data is empty or blank
                                     //sends radius error message to client and writes message to client file
@@ -197,7 +197,7 @@ public class MatheMagicServer {
                                     outputToClient.writeUTF(solution + "\n");
 
                                     //writes solution to client file
-                                    writeToFile(solution);
+                                    writeToFile("sides " + (int)val1 +" " + (int)val2 + ": " + solution);
 
                                 } else if (problem.matches(" \\d+\\s*")) { //checks if problem data matches the second correct data format
                                     //gets side value from problem data and calulates permeter and area using this value
@@ -213,7 +213,7 @@ public class MatheMagicServer {
                                     outputToClient.writeUTF(solution + "\n");
 
                                     //writes solution to client file
-                                    writeToFile(solution);
+                                    writeToFile("sides " + (int)val +" " + (int)val + ": " + solution);
 
                                 } else if (problem.isEmpty() || problem.isBlank()) { //checks if problem data is empty or blank
                                     //sends sides error message to client and writes message to client file
