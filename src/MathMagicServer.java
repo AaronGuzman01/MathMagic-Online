@@ -8,6 +8,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -17,7 +18,6 @@ import java.util.regex.Pattern;
  * @author aaron
  */
 public class MathMagicServer {
-
     private static final int SERVER_PORT = 9862;
 
     private static final String FILES_PATH = "Solution Files/";
@@ -25,7 +25,13 @@ public class MathMagicServer {
     private static boolean rootLogin = false;
 
     private static boolean loggedIn = false;
-
+    
+    private static Socket socket;
+    
+    private static DataInputStream inputFromClient;
+    
+    private static DataOutputStream outputToClient;
+    
     private static List<String> userList;
 
     private static String userLogged;
@@ -34,7 +40,6 @@ public class MathMagicServer {
 
     public static void main(String[] args) {
         try {
-
             ServerSocket serverSocket = new ServerSocket(SERVER_PORT);
 
             userList = Files.readAllLines(Path.of("logins.txt"));
@@ -43,13 +48,21 @@ public class MathMagicServer {
 
             System.out.println("Server started at " + new Date());
 
-            Socket socket = serverSocket.accept();
+            socket = serverSocket.accept();
+            
+            inputFromClient = new DataInputStream(socket.getInputStream());
 
-            DataInputStream inputFromClient = new DataInputStream(socket.getInputStream());
-
-            DataOutputStream outputToClient = new DataOutputStream(socket.getOutputStream());
+            outputToClient = new DataOutputStream(socket.getOutputStream());
 
             while (true) {
+                if (socket.isClosed()) {
+                    socket = serverSocket.accept();
+                    
+                    inputFromClient = new DataInputStream(socket.getInputStream());
+
+                    outputToClient = new DataOutputStream(socket.getOutputStream());
+                }
+                
                 String message = inputFromClient.readUTF();
 
                 if (message.contains(" ")) {
@@ -76,19 +89,21 @@ public class MathMagicServer {
 
                                     handleUserFile(userLogged);
 
-                                    outputToClient.writeUTF("SUCCESS");
+                                    outputToClient.writeUTF("SUCCESS \n");
 
                                     break;
                                 }
                             }
 
                             if (!found) {
-                                outputToClient.writeUTF("FAILURE: Please provide a correct username and password. Try again.");
+                                outputToClient.writeUTF("FAILURE: Please provide a correct username and password. Try again. \n");
                             }
-                        } else {
-                            outputToClient.writeUTF("301 message format error");
+                        } 
+                        else {
+                            outputToClient.writeUTF("301 message format error \n");
                         }
-                    } else if (command.equalsIgnoreCase("SOLVE")) {
+                    } 
+                    else if (command.equalsIgnoreCase("SOLVE")) {
                         if (loggedIn) {
                             String problem = message.substring(message.indexOf(" ") + 1, message.length());
 
@@ -103,18 +118,21 @@ public class MathMagicServer {
                                     String results = "Circle’s circumference is " + String.format("%.2f", circumference)
                                             + " and area is " + String.format("%.2f", area);
 
-                                    outputToClient.writeUTF(results);
+                                    outputToClient.writeUTF(results + "\n");
 
                                     writeToFile(results);
 
-                                } else if (problem.isEmpty() || problem.isBlank()) {
-                                    outputToClient.writeUTF("Error: No radius found");
+                                } 
+                                else if (problem.isEmpty() || problem.isBlank()) {
+                                    outputToClient.writeUTF("Error: No radius found \n");
 
-                                    writeToFile("Error: No radius found");
-                                } else {
-                                    outputToClient.writeUTF("301 message format error");
+                                    writeToFile("Error: No radius found \n");
+                                } 
+                                else {
+                                    outputToClient.writeUTF("301 message format error \n");
                                 }
-                            } else if (problem.matches("^-r.*")) {
+                            } 
+                            else if (problem.matches("^-r.*")) {
                                 problem = problem.substring(problem.indexOf("r") + 1, problem.length());
 
                                 if (Pattern.matches(" \\d+ \\d+\\s*", problem)) {
@@ -128,11 +146,12 @@ public class MathMagicServer {
                                     String results = "Rectangle’s perimeter is " + String.format("%.2f", perimeter)
                                             + " and area is " + String.format("%.2f", area);
 
-                                    outputToClient.writeUTF(results);
+                                    outputToClient.writeUTF(results + "\n");
 
                                     writeToFile(results);
 
-                                } else if (Pattern.matches(" \\d+\\s*", problem)) {
+                                } 
+                                else if (Pattern.matches(" \\d+\\s*", problem)) {
                                     double val = Double.parseDouble(problem);
                                     double perimeter = 4.0 * val;
                                     double area = val * val;
@@ -140,24 +159,29 @@ public class MathMagicServer {
                                     String results = "Rectangle’s perimeter is " + String.format("%.2f", perimeter)
                                             + " and area is " + String.format("%.2f", area);
 
-                                    outputToClient.writeUTF(results);
+                                    outputToClient.writeUTF(results + "\n");
 
                                     writeToFile(results);
 
-                                } else if (problem.isEmpty() || problem.isBlank()) {
-                                    outputToClient.writeUTF("Error: No radius found");
+                                } 
+                                else if (problem.isEmpty() || problem.isBlank()) {
+                                    outputToClient.writeUTF("Error: No radius found \n");
 
-                                    writeToFile("Error: No radius found");
-                                } else {
-                                    outputToClient.writeUTF("301 message format error");
+                                    writeToFile("Error: No radius found \n");
+                                } 
+                                else {
+                                    outputToClient.writeUTF("301 message format error \n");
                                 }
-                            } else {
-                                outputToClient.writeUTF("301 message format error");
+                            } 
+                            else {
+                                outputToClient.writeUTF("301 message format error \n");
                             }
-                        } else {
-                            outputToClient.writeUTF("Error: You must login to use this command");
+                        } 
+                        else {
+                            outputToClient.writeUTF("Error: You must login to use this command \n");
                         }
-                    } else if (command.equalsIgnoreCase("LIST")) {
+                    } 
+                    else if (command.equalsIgnoreCase("LIST")) {
                         if (rootLogin) {
                             String flag = message.substring(message.indexOf(" "), message.length());
 
@@ -180,39 +204,70 @@ public class MathMagicServer {
                                 }
                                 
                                 outputToClient.writeUTF(list);
-
-                            } else {
-                                outputToClient.writeUTF("301 message format error");
+                            } 
+                            else {
+                                outputToClient.writeUTF("301 message format error \n");
                             }
-                        } else {
-                            outputToClient.writeUTF("Error: You must be the root user to use this command");
+                        } 
+                        else {
+                            outputToClient.writeUTF("Error: You must be the root user to use this command \n");
                         }
-                    } else {
-                        outputToClient.writeUTF("300 invalid command");
+                    } 
+                    else {
+                        outputToClient.writeUTF("300 invalid command \n");
                     }
-                } else {
+                } 
+                else {
                     if (message.equalsIgnoreCase("LIST")) {
-                        List<String> interactions;
-                        String list;
+                        if (loggedIn) {
+                            List<String> interactions;
+                            String list;
 
-                        interactions = GetFileLines(userLogged);
+                            interactions = GetFileLines(userLogged);
 
-                        list = listToString(interactions, userLogged);
+                            list = listToString(interactions, userLogged);
 
-                        list += "\n";
-                        
-                        outputToClient.writeUTF(list);
-                    } else if (message.equalsIgnoreCase("SHUTDOWN")) {
-                        outputToClient.writeUTF("SHUTDOWN COMMAND");
-                    } else if (message.equalsIgnoreCase("LOGOUT")) {
-                        outputToClient.writeUTF("LOGOUT COMMAND");
-                        loggedIn = false;
-                    } else {
-                        outputToClient.writeUTF("300 invalid command");
+                            list += "\n";
+
+                            outputToClient.writeUTF(list);
+                        }
+                        else {
+                            outputToClient.writeUTF("Error: You must login to use this command \n");
+                        }
+                    } 
+                    else if (message.equalsIgnoreCase("SHUTDOWN")) {
+                        if (loggedIn) {
+                            outputToClient.writeUTF("200 OK \n");
+                            
+                            socket.close();
+
+                            serverSocket.close();
+                            
+                            break;
+                        }
+                        else {
+                            outputToClient.writeUTF("Error: You must login to use this command \n");
+                        }
+                    } 
+                    else if (message.equalsIgnoreCase("LOGOUT")) {
+                        if (loggedIn) {
+                            loggedIn = false;
+                            rootLogin = false;
+                            userLogged = null;
+                            
+                            outputToClient.writeUTF("200 OK \n");
+                            
+                            socket.close();
+                        }
+                        else {
+                            outputToClient.writeUTF("Error: You must login to use this command \n");
+                        }
+                    } 
+                    else {
+                        outputToClient.writeUTF("300 invalid command \n");
                     }
                 }
             }
-
         } catch (IOException ex) {
             ex.printStackTrace();
         }
@@ -224,6 +279,7 @@ public class MathMagicServer {
         if (!Files.exists(Path.of(FILES_PATH))) {
             Files.createDirectory(Path.of(FILES_PATH));
         }
+        
         solutionFile.createNewFile();
     }
 
@@ -240,7 +296,8 @@ public class MathMagicServer {
 
         if (interactions.isEmpty()) {
             temp += "\t" + "No interactions yet";
-        } else {
+        } 
+        else {
             for (String interaction : interactions) {
                 temp += "\t" + interaction + "\n";
             }
@@ -254,6 +311,8 @@ public class MathMagicServer {
     private static void writeToFile(String str) throws IOException {
         try (FileWriter fileWriter = new FileWriter(FILES_PATH + userLogged + "_solutions.txt", true)) {
             fileWriter.write(str + "\n");
+            
+            fileWriter.close();
         }
     }
 }

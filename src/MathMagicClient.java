@@ -30,7 +30,7 @@ public class MathMagicClient {
             toServer = new DataOutputStream(socket.getOutputStream());
             
             
-            System.out.println("Start entering a command:");
+            System.out.println("Start entering a command:\n");
             
             while (true) {
                 message = input.nextLine();
