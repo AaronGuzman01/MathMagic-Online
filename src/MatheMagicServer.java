@@ -16,11 +16,14 @@ import java.util.List;
  * @author Aaron Guzman
  */
 public class MatheMagicServer {
+
     private static final int SERVER_PORT = 9862;
 
     private static final String FILES_PATH = "Solution Files/";
 
     private static String request;
+
+    private static String command;
 
     private static String userLogged;
 
@@ -85,10 +88,17 @@ public class MatheMagicServer {
                 //checks if client request contains a whitespace (indicates potential flag or data)
                 if (request.contains(" ")) {
                     //gets command portion of client request
-                    String command = request.substring(0, request.indexOf(" "));
+                    command = request.substring(0, request.indexOf(" "));
+                }
+                else {
+                    //sets command to empty
+                    command = "";
+                }
 
-                    //checks if command received is LOGIN
-                    if (command.equals("LOGIN")) {
+                //checks if command received is LOGIN
+                if (command.equals("LOGIN")) {
+                    //checks if user is already logged in
+                    if (!loggedIn) {
                         //gets login information from LOGIN request
                         String loginInfo = request.substring(request.indexOf(" ") + 1, request.length());
 
@@ -137,211 +147,213 @@ public class MatheMagicServer {
                             //sends invalid format emessage to client
                             outputToClient.writeUTF("301 message format error \n");
                         }
-                    } else if (command.equals("SOLVE")) { //checks if command received is SOLVE
-                        //checks if user is logged in
-                        if (loggedIn) {
-                            //gets problem information from SOLVE request
-                            String problem = request.substring(request.indexOf(" ") + 1, request.length());
+                    } else {
+                        //sends invalid format emessage to client
+                        outputToClient.writeUTF("Error: You are already logged in\n");
+                    }
+                } else if (command.equals("SOLVE")) { //checks if command received is SOLVE
+                    //checks if user is logged in
+                    if (loggedIn) {
+                        //gets problem information from SOLVE request
+                        String problem = request.substring(request.indexOf(" ") + 1, request.length());
 
-                            //checks if beinning flag in problem matches the circle flag
-                            if (problem.matches("^-c.*")) {
-                                //gets problem data from problem information
-                                problem = problem.substring(problem.indexOf("c") + 1, problem.length());
+                        //checks if beinning flag in problem matches the circle flag
+                        if (problem.matches("^-c.*")) {
+                            //gets problem data from problem information
+                            problem = problem.substring(problem.indexOf("c") + 1, problem.length());
 
-                                //checks if problem data matches the correct data format
-                                if (problem.matches(" \\d+\\s*")) {
-                                    //gets radius value form problem data and calculates circumference and area using this value
-                                    double val = Double.parseDouble(problem);
-                                    double circumference = 2.0 * Math.PI * val;
-                                    double area = Math.PI * (val * val);
+                            //checks if problem data matches the correct data format
+                            if (problem.matches(" \\d+\\s*")) {
+                                //gets radius value form problem data and calculates circumference and area using this value
+                                double val = Double.parseDouble(problem);
+                                double circumference = 2.0 * Math.PI * val;
+                                double area = Math.PI * (val * val);
 
-                                    //creates a solution string from calulations
-                                    String solution = "Circle’s circumference is " + String.format("%.2f", circumference)
-                                            + " and area is " + String.format("%.2f", area);
+                                //creates a solution string from calulations
+                                String solution = "Circle’s circumference is " + String.format("%.2f", circumference)
+                                        + " and area is " + String.format("%.2f", area);
 
-                                    //sends solution to client
-                                    outputToClient.writeUTF(solution + "\n");
+                                //sends solution to client
+                                outputToClient.writeUTF(solution + "\n");
 
-                                    //writes solution to client file
-                                    writeToFile("radius " + (int)val + ": " + solution);
+                                //writes solution to client file
+                                writeToFile("radius " + (int) val + ": " + solution);
 
-                                } else if (problem.isEmpty() || problem.isBlank()) { //checks if problem data is empty or blank
-                                    //sends radius error message to client and writes message to client file
-                                    outputToClient.writeUTF("Error: No radius found \n");
+                            } else if (problem.isEmpty() || problem.isBlank()) { //checks if problem data is empty or blank
+                                //sends radius error message to client and writes message to client file
+                                outputToClient.writeUTF("Error: No radius found \n");
 
-                                    writeToFile("Error: No radius found \n");
-                                } else {
-                                    //sends invalid format emessage to client
-                                    outputToClient.writeUTF("301 message format error \n");
-                                }
-                            } else if (problem.matches("^-r.*")) { //checks if beinning flag in problem matches the rectangle flag
-                                //gets problem data from problem information
-                                problem = problem.substring(problem.indexOf("r") + 1, problem.length());
+                                writeToFile("Error: No radius found \n");
+                            } else {
+                                //sends invalid format emessage to client
+                                outputToClient.writeUTF("301 message format error \n");
+                            }
+                        } else if (problem.matches("^-r.*")) { //checks if beinning flag in problem matches the rectangle flag
+                            //gets problem data from problem information
+                            problem = problem.substring(problem.indexOf("r") + 1, problem.length());
 
-                                //checks if problem data matches the first correct data format
-                                if (problem.matches(" \\d+ \\d+\\s*")) {
-                                    //removes beginning whitespace from problem data
-                                    problem = problem.substring(1, problem.length());
+                            //checks if problem data matches the first correct data format
+                            if (problem.matches(" \\d+ \\d+\\s*")) {
+                                //removes beginning whitespace from problem data
+                                problem = problem.substring(1, problem.length());
 
-                                    //gets length and width values from problem data and calculates perimeter and area using these values
-                                    double val1 = Double.parseDouble(problem.substring(0, problem.indexOf(" ")));
-                                    double val2 = Double.parseDouble(problem.substring(problem.indexOf(" "), problem.length()));
-                                    double perimeter = 2.0 * (val1 + val2);
-                                    double area = val1 * val2;
+                                //gets length and width values from problem data and calculates perimeter and area using these values
+                                double val1 = Double.parseDouble(problem.substring(0, problem.indexOf(" ")));
+                                double val2 = Double.parseDouble(problem.substring(problem.indexOf(" "), problem.length()));
+                                double perimeter = 2.0 * (val1 + val2);
+                                double area = val1 * val2;
 
-                                    //creates a solution string from calculations
-                                    String solution = "Rectangle’s perimeter is " + String.format("%.2f", perimeter)
-                                            + " and area is " + String.format("%.2f", area);
+                                //creates a solution string from calculations
+                                String solution = "Rectangle’s perimeter is " + String.format("%.2f", perimeter)
+                                        + " and area is " + String.format("%.2f", area);
 
-                                    //sends solution to client
-                                    outputToClient.writeUTF(solution + "\n");
+                                //sends solution to client
+                                outputToClient.writeUTF(solution + "\n");
 
-                                    //writes solution to client file
-                                    writeToFile("sides " + (int)val1 +" " + (int)val2 + ": " + solution);
+                                //writes solution to client file
+                                writeToFile("sides " + (int) val1 + " " + (int) val2 + ": " + solution);
 
-                                } else if (problem.matches(" \\d+\\s*")) { //checks if problem data matches the second correct data format
-                                    //gets side value from problem data and calulates permeter and area using this value
-                                    double val = Double.parseDouble(problem);
-                                    double perimeter = 4.0 * val;
-                                    double area = val * val;
+                            } else if (problem.matches(" \\d+\\s*")) { //checks if problem data matches the second correct data format
+                                //gets side value from problem data and calulates permeter and area using this value
+                                double val = Double.parseDouble(problem);
+                                double perimeter = 4.0 * val;
+                                double area = val * val;
 
-                                    //creates a solution string from calculations
-                                    String solution = "Rectangle’s perimeter is " + String.format("%.2f", perimeter)
-                                            + " and area is " + String.format("%.2f", area);
+                                //creates a solution string from calculations
+                                String solution = "Rectangle’s perimeter is " + String.format("%.2f", perimeter)
+                                        + " and area is " + String.format("%.2f", area);
 
-                                    //sends solution to client
-                                    outputToClient.writeUTF(solution + "\n");
+                                //sends solution to client
+                                outputToClient.writeUTF(solution + "\n");
 
-                                    //writes solution to client file
-                                    writeToFile("sides " + (int)val +" " + (int)val + ": " + solution);
+                                //writes solution to client file
+                                writeToFile("sides " + (int) val + " " + (int) val + ": " + solution);
 
-                                } else if (problem.isEmpty() || problem.isBlank()) { //checks if problem data is empty or blank
-                                    //sends sides error message to client and writes message to client file
-                                    outputToClient.writeUTF("Error: No sides found \n");
+                            } else if (problem.isEmpty() || problem.isBlank()) { //checks if problem data is empty or blank
+                                //sends sides error message to client and writes message to client file
+                                outputToClient.writeUTF("Error: No sides found \n");
 
-                                    writeToFile("Error: No sides found \n");
-                                } else {
-                                    //sends invalid format message to client
-                                    outputToClient.writeUTF("301 message format error \n");
-                                }
+                                writeToFile("Error: No sides found \n");
                             } else {
                                 //sends invalid format message to client
                                 outputToClient.writeUTF("301 message format error \n");
                             }
                         } else {
-                            //sends login error message to client
-                            outputToClient.writeUTF("Error: You must login to use this command \n");
-                        }
-                    } else if (command.equals("LIST")) { //checks if command received is LIST
-                        //checks if user logged in is root user
-                        if (rootLogin) {
-                            //gets flag from client request
-                            String flag = request.substring(request.indexOf(" "), request.length());
-
-                            //checks if flag is in correct format
-                            if (flag.matches("^ -all\\s*")) {
-                                //creates list of strings to store individual interactions, a string for the users' name, and a string to
-                                //store all interactions as a single string
-                                List<String> interactions;
-                                String username, list = "";
-
-                                //for loop to process each valid user
-                                for (String user : userList) {
-                                    //gets user's username
-                                    username = user.substring(0, request.indexOf(" ") + 1);
-
-                                    //removes unnecessary whitespaces
-                                    username = username.trim();
-
-                                    //prepares user's solution file
-                                    handleUserFile(username);
-
-                                    //gets interactions from user's file
-                                    interactions = getFileLines(username);
-
-                                    //converts user interactions into a single string
-                                    list += listToString(interactions, username);
-
-                                    //appends a newline character at the end of the list string
-                                    list += "\n";
-                                }
-
-                                //sends list string to client
-                                outputToClient.writeUTF(list);
-                            } else {
-                                //sends invalid format message to client
-                                outputToClient.writeUTF("301 message format error \n");
-                            }
-                        } else {
-                            //sends root user error message to client
-                            outputToClient.writeUTF("Error: You must be the root user to use this command \n");
+                            //sends invalid format message to client
+                            outputToClient.writeUTF("301 message format error \n");
                         }
                     } else {
-                        //sends invalid command message to client
-                        outputToClient.writeUTF("300 invalid command \n");
+                        //sends login error message to client
+                        outputToClient.writeUTF("Error: You must login to use this command \n");
                     }
-                } else { //Processes request that do not have any flags or data
-                    if (request.equals("LIST")) { //checks if command received is LIST
-                        //checks if user is logged in
-                        if (loggedIn) {
-                            //creates list of strings to store individual interactions and a string to store all interactions as 
-                            //a single string
+                } else if (request.matches("^LIST *")) { //checks if request received is LIST
+                    //checks if user is logged in
+                    if (loggedIn) {
+                        //creates list of strings to store individual interactions and a string to store all interactions as 
+                        //a single string
+                        List<String> interactions;
+                        String list;
+
+                        //gets interactions from logged in user's file
+                        interactions = getFileLines(userLogged);
+
+                        //converts user interactions into a single string
+                        list = listToString(interactions, userLogged);
+
+                        //appends a newline character at the end of the list string
+                        list += "\n";
+
+                        //sends list string to client
+                        outputToClient.writeUTF(list);
+                    } else {
+                        //sends login error message to client
+                        outputToClient.writeUTF("Error: You must login to use this command \n");
+                    }
+                } else if (command.equals("LIST")) { //checks if command received is LIST
+                    //gets flag from client request
+                    String flag = request.substring(request.indexOf(" "), request.length());
+                    
+                    //checks if request is in valid format
+                    if (flag.charAt(1) != '-') {
+                        //sends invalid format message to client
+                        outputToClient.writeUTF("301 message format error \n");
+                    }
+                    else if (rootLogin) { //checks if user logged in is root user
+                        //checks if flag is in correct format
+                        if (flag.matches("^ -all *")) {
+                            //creates list of strings to store individual interactions, a string for the users' name, and a string to
+                            //store all interactions as a single string
                             List<String> interactions;
-                            String list;
+                            String username, list = "";
 
-                            //gets interactions from logged in user's file
-                            interactions = getFileLines(userLogged);
+                            //for loop to process each valid user
+                            for (String user : userList) {
+                                //gets user's username
+                                username = user.substring(0, request.indexOf(" ") + 1);
 
-                            //converts user interactions into a single string
-                            list = listToString(interactions, userLogged);
+                                //removes unnecessary whitespaces
+                                username = username.trim();
 
-                            //appends a newline character at the end of the list string
-                            list += "\n";
+                                //prepares user's solution file
+                                handleUserFile(username);
+
+                                //gets interactions from user's file
+                                interactions = getFileLines(username);
+
+                                //converts user interactions into a single string
+                                list += listToString(interactions, username);
+
+                                //appends a newline character at the end of the list string
+                                list += "\n";
+                            }
 
                             //sends list string to client
                             outputToClient.writeUTF(list);
                         } else {
-                            //sends login error message to client
-                            outputToClient.writeUTF("Error: You must login to use this command \n");
-                        }
-                    } else if (request.equals("SHUTDOWN")) { //checks if command received is SHUTDOWN
-                        //checks if user is logged in
-                        if (loggedIn) {
-                            //sends 200 OK message to client
-                            outputToClient.writeUTF("200 OK \n");
-
-                            //closes client connection
-                            socket.close();
-
-                            //closes server
-                            serverSocket.close();
-
-                            //breaks from while loop
-                            break;
-                        } else {
-                            //sends login error message to client
-                            outputToClient.writeUTF("Error: You must login to use this command \n");
-                        }
-                    } else if (request.equals("LOGOUT")) { //checks if command received is LOGOUT
-                        if (loggedIn) {
-                            //resets logged in and root login flags and clears user logged in
-                            loggedIn = false;
-                            rootLogin = false;
-                            userLogged = null;
-
-                            //sends 200 OK message to client
-                            outputToClient.writeUTF("200 OK \n");
-
-                            //closes client connection
-                            socket.close();
-                        } else {
-                            //sends login error message to client
-                            outputToClient.writeUTF("Error: You must login to use this command \n");
+                            //sends invalid format message to client
+                            outputToClient.writeUTF("301 message format error \n");
                         }
                     } else {
-                        //sends invalid format message to client
-                        outputToClient.writeUTF("300 invalid command \n");
+                        //sends root user error message to client
+                        outputToClient.writeUTF("Error: You must be the root user to use this command \n");
                     }
+                } else if (request.matches("^SHUTDOWN *")) { //checks if request received is SHUTDOWN
+                    //checks if user is logged in
+                    if (loggedIn) {
+                        //sends 200 OK message to client
+                        outputToClient.writeUTF("200 OK \n");
+
+                        //closes client connection
+                        socket.close();
+
+                        //closes server
+                        serverSocket.close();
+
+                        //breaks from while loop
+                        break;
+                    } else {
+                        //sends login error message to client
+                        outputToClient.writeUTF("Error: You must login to use this command \n");
+                    }
+                } else if (request.matches("^LOGOUT *")) { //checks if request received is LOGOUT
+                    if (loggedIn) {
+                        //resets logged in and root login flags and clears user logged in
+                        loggedIn = false;
+                        rootLogin = false;
+                        userLogged = null;
+
+                        //sends 200 OK message to client
+                        outputToClient.writeUTF("200 OK \n");
+
+                        //closes client connection
+                        socket.close();
+                    } else {
+                        //sends login error message to client
+                        outputToClient.writeUTF("Error: You must login to use this command \n");
+                    }
+                } else {
+                    //sends invalid format message to client
+                    outputToClient.writeUTF("300 invalid command \n");
                 }
             }
         } catch (IOException ex) {
@@ -359,8 +371,8 @@ public class MatheMagicServer {
     }
 
     /**
-     * The handleUserFile method will check and create the solution files folder and
-     * will create a solution file for the user received
+     * The handleUserFile method will check and create the solution files folder
+     * and will create a solution file for the user received
      */
     private static void handleUserFile(String user) throws IOException {
         //creates a file instance of a solution file using the user received
@@ -376,8 +388,8 @@ public class MatheMagicServer {
     }
 
     /**
-     * The getFileLines method will return the contents of a specified user's solution 
-     * file as a list of strings
+     * The getFileLines method will return the contents of a specified user's
+     * solution file as a list of strings
      */
     private static List<String> getFileLines(String user) throws IOException {
         //reads all lines from solution file of received user
@@ -388,13 +400,13 @@ public class MatheMagicServer {
     }
 
     /**
-     * The listToString method will convert a list of strings into a single customized
-     * string message using the user's username
+     * The listToString method will convert a list of strings into a single
+     * customized string message using the user's username
      */
     private static String listToString(List<String> interactions, String user) {
         //string for customized message
         String message;
-        
+
         //assigns username to message
         message = user + ":\n";
 
@@ -418,8 +430,8 @@ public class MatheMagicServer {
     }
 
     /**
-     * The writeToFile method will receive a string and write that string to the current logged in
-     * user's solution file
+     * The writeToFile method will receive a string and write that string to the
+     * current logged in user's solution file
      */
     private static void writeToFile(String str) throws IOException {
         //try-with-resource statment to open user's solution file and ensure it is closed
